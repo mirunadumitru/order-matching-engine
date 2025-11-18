@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from .models import Order, Trade
+from .models import Order, Trade, Side, OrderType, TimeInForce
 from .order_book import OrderBook
 
 
@@ -13,15 +13,25 @@ class Exchange:
         self.next_order_id += 1
         return i
 
-    def submit_order(self, side, price: float, quantity: int) -> List[Trade]:
+    def submit_order(
+        self,
+        side: Side,
+        price: float,
+        quantity: int,
+        order_type: OrderType = OrderType.LIMIT,
+        time_in_force: TimeInForce = TimeInForce.GTC,
+    ) -> List[Trade]:
         order = Order(
             id=self._get_next_id(),
             side=side,
             price=price,
             quantity=quantity,
+            order_type=order_type,
+            time_in_force=time_in_force,
         )
         trades = self.order_book.match(order)
         return trades
+
 
     def get_best_bid(self) -> Optional[Tuple[float, int]]:
         best = self.order_book.get_best_bid()
