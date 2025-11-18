@@ -89,4 +89,23 @@ class OrderBook:
                 self.add_order(order)
 
         return trades
+    def cancel_order(self, order_id: int) -> bool:
+        for price, orders in list(self.bids.items()):
+            for i, o in enumerate(orders):
+                if o.id == order_id:
+                    orders.pop(i)
+                    if not orders:
+                        del self.bids[price]
+                    return True
+
+        for price, orders in list(self.asks.items()):
+            for i, o in enumerate(orders):
+                if o.id == order_id:
+                    orders.pop(i)
+                    if not orders:
+                        del self.asks[price]
+                    return True
+
+        return False
+
 
