@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Tuple
-from .models import Order, Side, Trade
+from .models import Order, Side, Trade, OrderType, TimeInForce
 
 
 class OrderBook:
@@ -34,11 +34,13 @@ class OrderBook:
                 if best_ask is None:
                     break
                 best_price, orders_at_price = best_ask
-                if best_price > order.price:
+
+                if order.order_type == OrderType.LIMIT and best_price > order.price:
                     break
 
                 best_order = orders_at_price[0]
                 traded_qty = min(order.quantity, best_order.quantity)
+
                 trade = Trade(
                     buy_order_id=order.id,
                     sell_order_id=best_order.id,
@@ -55,7 +57,7 @@ class OrderBook:
                     if not orders_at_price:
                         del self.asks[best_price]
 
-            if order.quantity > 0:
+            if order.quantity > 0 and order.time_in_force != TimeInForce.IOC:
                 self.add_order(order)
 
         else:
@@ -64,11 +66,13 @@ class OrderBook:
                 if best_bid is None:
                     break
                 best_price, orders_at_price = best_bid
-                if best_price < order.price:
+
+                if order.order_type == OrderType.LIMIT and best_price < order.price:
                     break
 
                 best_order = orders_at_price[0]
                 traded_qty = min(order.quantity, best_order.quantity)
+
                 trade = Trade(
                     buy_order_id=best_order.id,
                     sell_order_id=order.id,
@@ -85,10 +89,11 @@ class OrderBook:
                     if not orders_at_price:
                         del self.bids[best_price]
 
-            if order.quantity > 0:
+            if order.quantity > 0 and order.time_in_force != TimeInForce.IOC:
                 self.add_order(order)
 
         return trades
+
     def cancel_order(self, order_id: int) -> bool:
         for price, orders in list(self.bids.items()):
             for i, o in enumerate(orders):

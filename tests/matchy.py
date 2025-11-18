@@ -1,5 +1,5 @@
 from src.order_book import OrderBook
-from src.models import Order, Side
+from src.models import Order, Side, OrderType, TimeInForce
 
 
 def test_full_match_buy_hits_existing_sell():
@@ -99,3 +99,44 @@ def test_multiple_price_levels_match_in_order():
     assert price == 100
     assert len(orders) == 1
     assert orders[0].quantity == 2
+
+def test_market_buy_ignores_price():
+    ob = OrderBook()
+    ob.add_order(Order(id=1, side=Side.SELL, price=100, quantity=5))
+
+    buy = Order(
+        id=2,
+        side=Side.BUY,
+        price=0,
+        quantity=5,
+        order_type=OrderType.MARKET,
+    )
+    trades = ob.match(buy)
+
+    assert len(trades) == 1
+    t = trades[0]
+    assert t.price == 100
+    assert t.quantity == 5
+    assert ob.get_best_ask() is None
+
+
+def test_ioc_does_not_rest_in_book():
+    ob = OrderBook()
+    ob.add_order(Order(id=1, side=Side.SELL, price=100, quantity=2))
+
+    buy = Order(
+        id=2,
+        side=Side.BUY,
+        price=100,
+        quantity=5,
+        order_type=OrderType.LIMIT,
+        time_in_force=TimeInForce.IOC,
+    )
+    trades = ob.match(buy)
+
+    assert len(trades) == 1
+    t = trades[0]
+    assert t.quantity == 2
+
+    best_bid = ob.get_best_bid()
+    assert best_bid is None
